@@ -1,13 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcryptjs");
 
 //Load user model
-import { User } from "../models/userModel";
-import { Cart } from "../models/cartModel";
-
-const JWT = require("jsonwebtoken");
-const accessTokenSecret = "secretToken";
+const userData = require("../models/userModel");
+const cartData = require("../models/cartModel");
 
 /**
  * @route /users/
@@ -26,100 +22,69 @@ router.get("/", async (req, res) => {
  *
  */
 router.get("/:id", async (req, res) => {
-  let foundUserByID = await User.findById(req.params.id);
-
-  res.send(foundUserByID);
-});
-
-/**
- * @route POST routes/users/register
- * @desc register a new user
- */
-router.post("/register", async (req, res) => {
-  //Find a users email.
-  User.findOne({ email: req.body.email })
-    //if a user is found
-    .then((user) => {
-      if (user) {
-        //Send an error
-        return res.status(400).json({ msg: "Email already in use!" });
-      }
-      //Else register the new user
-      else {
-        const newUser = new User(req.body);
-
-        //assign the user a cart on registration
-        newUser.cart = createCart(newUser._id);
-
-        //Save the user to the DB
-        newUser
-          .save()
-          .then((user) => res.json(user))
-          .catch((err) => console.log(err));
-      }
-    });
-});
-/**
- * @route POST /login
- * @desc verifies the login info and returns a signed JWT token
- */
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  const foundUser = await User.findOne({
-    email: email,
-  });
-
-  if (foundUser === null) {
-    res.send(`User not found!`);
-  } else {
-    if (foundUser.password !== password) {
-      res.send(`Password was incorrect!`);
-    } else {
-      const accessToken = JWT.sign({ user: foundUser }, accessTokenSecret);
-      res.send(accessToken);
+  try {
+    const user = await userData.findById(req.params.id).populate([
+      {
+        path: "cart",
+        model: "Cart",
+        populate: {
+          path: "cartItems.storeItem",
+          model: "StoreItem",
+        },
+      },
+    ]);
+    if (req.userJwt.user._id !== user.id) {
+      return res.send(403);
     }
+    res.send(user || 404);
+  } catch (err) {
+    res.send(400);
   }
+
+  // let foundUserByID = await User.findById(req.params.id);
+
+  // res.send(foundUserByID);
 });
 
 /**
  * @route GET /user/:UserId/cart
  * @desc Gets the user’s cart
  */
-router.get("/:userId/cart", async (req, res) => {
-  let foundUser = await User.findById(req.params.userId);
-
-  let result = await Cart.find({ _id: foundUser.cart }).populate({
-    path: "items", // populate blogs
-    populate: {
-      path: "storeItems", // in blogs, populate comments
-    },
-  });
-
-  res.json(result);
+router.get("/:UserId/cart", async (req, res) => {
+  //find the user
+  try {
+    const user = await userData.findById(req.params.UserId).populate([
+      {
+        path: "cart",
+        model: "Cart",
+        populate: {
+          path: "cartItems.storeItem",
+          model: "StoreItem",
+        },
+      },
+    ]);
+    res.send(user.cart)
+  } catch (err) {
+    res.send(400);
+  }
 });
 
 /**
  * @route DELETE /user/:UserId/cart
  * @desc Empties the user’s cart
  */
-router.delete("/:userID/cart", async (req, res) => {
-  let foundUser = await User.findById(req.params.userID);
+router.delete("/:userId/cart", async (req, res) => {
+  let user = await userData.findById(req.params.userId).populate("cart");
+  //find the user
+  if (!user) {
+    return res.send(404);
+  }
+  //find the users cart
+  user.cart.cartItems = [];
+  const cart = await user.cart.save();
+  //user = await user.save();
 
-  await Cart.updateOne({ _id: foundUser.cart }, { $set: { items: [] } });
-
-  let updatedCart = await Cart.findById(foundUser.cart);
-
-  res.json(updatedCart);
+  res.send(user.cart);
 });
-
-//helper function
-const createCart = function (CartUser) {
-  const cart = new Cart({
-    CartUser,
-  });
-  cart.save();
-  return cart;
-};
 
 module.exports = router;

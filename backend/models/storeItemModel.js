@@ -1,24 +1,13 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const storeData = mongoose.model(
+  "StoreItem",
+  new mongoose.Schema({
+    quantity: Number,
+    description: String,
+    title: String,
+    image: String,
+    price: Number, 
+  })
+);
 
-const Schema = mongoose.Schema;
-
-const storeItemSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-  stock: {
-    type: Number,
-    default: 1,
-  },
-});
-
-export const storeItem = mongoose.model("storeItem", storeItemSchema);
+module.exports = storeData;
