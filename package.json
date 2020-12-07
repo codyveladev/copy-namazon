@@ -1,0 +1,20 @@
+{
+  "name": "copy-namazon",
+  "version": "1.0.0",
+  "description": "**Database Section**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codyveladev/copy-namazon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codyveladev/copy-namazon/issues"
+  },
+  "homepage": "https://github.com/codyveladev/copy-namazon#readme"
+}
